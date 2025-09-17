@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Astrologer - Cosmic Insights</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* CSS Custom Properties for Theming */
+        :root {
+            /* Cosmic Mode (Default) */
+            --bg-primary: linear-gradient(135deg, #1a0933 0%, #2a1b4a 50%, #3b2a66 100%);
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --border-card: rgba(255, 255, 255, 0.2);
+            --text-primary: #e0e0e0;
+            --text-accent: #ffd700;
+            --text-shadow: 0 0 10px rgba(255, 215, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.5);
+            --input-bg: rgba(255, 255, 255, 0.1);
+            --input-border: rgba(255, 255, 255, 0.3);
+            --button-bg: linear-gradient(90deg, #a855f7, #d946ef);
+            --button-hover-shadow: 0 0 15px rgba(168, 85, 247, 0.7);
+            --result-bg: rgba(0, 0, 0, 0.4);
+            --error-bg: rgba(239, 68, 68, 0.3);
+            --error-border: #ef4444;
+        }
+        [data-theme="light"] {
+            --bg-primary: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 50%, #d8b4fe 100%);
+            --bg-card: rgba(255, 255, 255, 0.8);
+            --border-card: rgba(0, 0, 0, 0.1);
+            --text-primary: #1f2937;
+            --text-accent: #7c3aed;
+            --text-shadow: 0 0 5px rgba(124, 58, 237, 0.5);
+            --input-bg: #ffffff;
+            --input-border: #d1d5db;
+            --button-bg: linear-gradient(90deg, #7c3aed, #c084fc);
+            --button-hover-shadow: 0 0 15px rgba(124, 58, 237, 0.7);
+            --result-bg: rgba(255, 255, 255, 0.9);
+            --error-bg: rgba(254, 202, 202, 0.5);
+            --error-border: #f87171;
+        }
+        [data-theme="dark"] {
+            --bg-primary: #111827;
+            --bg-card: rgba(31, 41, 55, 0.8);
+            --border-card: rgba(255, 255, 255, 0.1);
+            --text-primary: #e5e7eb;
+            --text-accent: #60a5fa;
+            --text-shadow: 0 0 5px rgba(96, 165, 250, 0.5);
+            --input-bg: #374151;
+            --input-border: #4b5563;
+            --button-bg: linear-gradient(90deg, #60a5fa, #3b82f6);
+            --button-hover-shadow: 0 0 15px rgba(96, 165, 250, 0.7);
+            --result-bg: rgba(31, 41, 55, 0.9);
+            --error-bg: rgba(248, 113, 113, 0.3);
+            --error-border: #f87171;
+        }
+
+        /* Base Styles */
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated Stars (Visible in Cosmic Mode) */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            display: none;
+        }
+        [data-theme="cosmic"] .stars {
+            display: block;
+        }
+        .star {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle 5s infinite;
+            opacity: 0.7;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 0.2; }
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-4px);
+        }
+
+        /* Vibrant Title and Headings */
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--text-accent);
+            text-shadow: var(--text-shadow);
+            animation: fadeIn 1s ease-in;
+        }
+        h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Input Fields */
+        input {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-primary);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        input:focus {
+            border-color: var(--text-accent);
+            box-shadow: 0 0 8px var(--button-hover-shadow);
+        }
+
+        /* Buttons */
+        button {
+            background: var(--button-bg);
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-weight: 600;
+            color: #ffffff;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: var(--button-hover-shadow);
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+        }
+        .theme-toggle button {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            border-radius: 20px;
+            opacity: 0.8;
+        }
+        .theme-toggle button.active {
+            opacity: 1;
+            box-shadow: var(--button-hover-shadow);
+        }
+
+        /* Results and Error Boxes */
+        #results, #questionResult {
+            background: var(--result-bg);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        #error, #questionError {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 640px) {
+            h1 { font-size: 2.25rem; }
+            h2 { font-size: 1.5rem; }
+            .container { padding: 16px; }
+            .theme-toggle { top: 10px; right: 10px; }
+            .theme-toggle button { padding: 6px 12px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body data-theme="cosmic">
+    <!-- Animated Stars (Cosmic Mode) -->
+    <div class="stars">
+        <script>
+            // Generate 100 random stars
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.width = `${Math.random() * 2 + 1}px`;
+                star.style.height = star.style.width;
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.animationDelay = `${Math.random() * 5}s`;
+                document.querySelector('.stars').appendChild(star);
+            }
+        </script>
+    </div>
+
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+        <button class="theme-btn active" data-theme="cosmic">Cosmic</button>
+        <button class="theme-btn" data-theme="light">Light</button>
+        <button class="theme-btn" data-theme="dark">Dark</button>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <!-- Header -->
+        <header class="text-center mb-12 animate-fadeIn">
+            <h1>AI Astrologer</h1>
+            <p class="text-lg mt-2">Unlock the secrets of the cosmos with personalized astrological insights.</p>
+        </header>
+
+        <!-- Birth Details Form -->
+        <section class="mb-12 glass-card p-8">
+            <h2 class="mb-6 text-center">Enter Your Birth Details</h2>
+            <form id="birthForm" class="space-y-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium">Name</label>
+                    <input type="text" id="name" name="name" required
+                           class="mt-1 block w-full px-4 py-3 rounded-md focus:outline-none"
+                           placeholder="Your Name">
+                </div>
+                <div>
+                    <label for="birth_date" class="block text-sm font-medium">Birth Date</label>
+                    <input type="date" id="birth_date" name="birth_date" required
+                           class="mt-1 block w-full px-4 py-3 rounded-md focus:outline-none">
+                </div>
+                <div>
+                    <label for="birth_time" class="block text-sm font-medium">Birth Time</label>
+                    <input type="time" id="birth_time" name="birth_time" required
+                           class="mt-1 block w-full px-4 py-3 rounded-md focus:outline-none">
+                </div>
+                <div>
+                    <label for="birth_place" class="block text-sm font-medium">Birth Place</label>
+                    <input type="text" id="birth_place" name="birth_place" required
+                           class="mt-1 block w-full px-4 py-3 rounded-md focus:outline-none"
+                           placeholder="e.g., Visakhapatnam, India">
+                </div>
+                <button type="submit" class="w-full">Get Your Cosmic Insights</button>
+            </form>
+            <!-- Loading and Results -->
+            <div id="loading" class="hidden mt-6 text-center">Calculating your cosmic profile...</div>
+            <div id="results" class="hidden mt-6">
+                <h3 class="text-xl font-semibold mb-4">Your Astrological Profile</h3>
+                <p id="sun_sign"></p>
+                <p id="moon_sign"></p>
+                <p id="ascendant"></p>
+                <p id="traits"></p>
+            </div>
+            <div id="error" class="hidden mt-6"></div>
+        </section>
+
+        <!-- Question Form -->
+        <section class="glass-card p-8">
+            <h2 class="mb-6 text-center">Ask the Cosmos</h2>
+            <form id="questionForm" class="space-y-6">
+                <div>
+                    <label for="message" class="block text-sm font-medium">Your Question</label>
+                    <input type="text" id="message" name="message" required
+                           class="mt-1 block w-full px-4 py-3 rounded-md focus:outline-none"
+                           placeholder="e.g., What's my horoscope today?">
+                </div>
+                <button type="submit" class="w-full">Ask Now</button>
+            </form>
+            <!-- Question Response -->
+            <div id="questionLoading" class="hidden mt-6 text-center">Consulting the stars...</div>
+            <div id="questionResult" class="hidden mt-6"></div>
+            <div id="questionError" class="hidden mt-6"></div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12">
+            <p>&copy; 2025 AI Astrologer. Powered by Cosmic Intelligence.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Theme Toggle Logic
+        const themeButtons = document.querySelectorAll('.theme-btn');
+        const body = document.body;
+
+        themeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const theme = button.getAttribute('data-theme');
+                body.setAttribute('data-theme', theme);
+                themeButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                localStorage.setItem('theme', theme); // Persist theme
+            });
+        });
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'cosmic';
+        body.setAttribute('data-theme', savedTheme);
+        themeButtons.forEach(btn => {
+            if (btn.getAttribute('data-theme') === savedTheme) {
+                btn.classList.add('active');
+            }
+        });
+
+        // Handle Birth Details Form Submission
+        document.getElementById('birthForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const data = {
+                name: formData.get('name'),
+                birth_date: formData.get('birth_date'),
+                birth_time: formData.get('birth_time'),
+                birth_place: formData.get('birth_place')
+            };
+
+            // Show loading, hide results/error
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                document.getElementById('loading').classList.add('hidden');
+                if (result.status === 'success') {
+                    document.getElementById('sun_sign').textContent = `Sun Sign: ${result.sun_sign}`;
+                    document.getElementById('moon_sign').textContent = `Moon Sign: ${result.moon_sign}`;
+                    document.getElementById('ascendant').textContent = `Ascendant: ${result.ascendant}`;
+                    document.getElementById('traits').textContent = `Traits: ${result.traits}`;
+                    document.getElementById('results').classList.remove('hidden');
+                } else {
+                    document.getElementById('error').textContent = result.message;
+                    document.getElementById('error').classList.remove('hidden');
+                }
+            } catch (err) {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('error').textContent = 'Error connecting to the server. Please try again.';
+                document.getElementById('error').classList.remove('hidden');
+            }
+        });
+
+        // Handle Question Form Submission
+        document.getElementById('questionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const data = { message: formData.get('message') };
+
+            // Show loading, hide results/error
+            document.getElementById('questionLoading').classList.remove('hidden');
+            document.getElementById('questionResult').classList.add('hidden');
+            document.getElementById('questionError').classList.add('hidden');
+
+            try {
+                const response = await fetch('/process_message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                document.getElementById('questionLoading').classList.add('hidden');
+                if (result.status === 'success') {
+                    document.getElementById('questionResult').textContent = result.message;
+                    document.getElementById('questionResult').classList.remove('hidden');
+                } else {
+                    document.getElementById('questionError').textContent = result.message;
+                    document.getElementById('questionError').classList.remove('hidden');
+                }
+            } catch (err) {
+                document.getElementById('questionLoading').classList.add('hidden');
+                document.getElementById('questionError').textContent = 'Error connecting to the server. Please try again.';
+                document.getElementById('questionError').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
