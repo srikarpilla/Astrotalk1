@@ -195,4 +195,5 @@ def process_message():
         return jsonify({'status': 'error', 'message': str(e)})
 
 if __name__ == '__main__':
-    application.run(debug=True, host='0.0.0.0', port=5000)
+
+    app.run(debug=True, host='0.0.0.0', port=5000)
