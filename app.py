@@ -31,7 +31,7 @@ except Exception as e:
     logger.error(f"Failed to set ephemeris path: {str(e)}")
     raise Exception("Ephemeris path './ephe' not found.")
 
-application = Flask(__name__, static_folder='static')
+app= Flask(__name__, static_folder='static')
 CORS(application)
 
 # [Rest of the code remains the same as in the previous optimized app.py]
@@ -65,11 +65,11 @@ spelling_corrections = {
     'bombay': 'Mumbai, India'
 }
 
-@application.route('/')
+@app.route('/')
 def serve_index():
     return application.send_static_file('index.html')
 
-@application.route('/process', methods=['POST'])
+@app.route('/process', methods=['POST'])
 def process_birth_details():
     global last_geocode_time
     try:
@@ -166,7 +166,7 @@ def process_birth_details():
         logger.error(f"Unexpected error in /process: {str(e)}")
         return jsonify({'status': 'error', 'message': f'Processing failed: {str(e)}'})
 
-@application.route('/process_message', methods=['POST'])
+@app.route('/process_message', methods=['POST'])
 def process_message():
     try:
         data = request.get_json()
@@ -197,3 +197,4 @@ def process_message():
 if __name__ == '__main__':
 
     app.run(debug=True, host='0.0.0.0', port=5000)
+
