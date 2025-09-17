@@ -31,14 +31,10 @@ except Exception as e:
     logger.error(f"Failed to set ephemeris path: {str(e)}")
     raise Exception("Ephemeris path './ephe' not found.")
 
-app= Flask(__name__, static_folder='static')
-CORS(application)
+app = Flask(__name__, static_folder='static')
+CORS(app)  # Changed from CORS(application) to CORS(app)
 
-# [Rest of the code remains the same as in the previous optimized app.py]
 # Sign mapper, horoscopes, user_data, geolocation_cache, spelling_corrections
-# Routes: /, /process, /process_message
-# (Copy the full code from the previous response, replacing 'app' with 'application')
-
 signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
 horoscopes = {
     'Aries': 'Your fiery spirit shines. Take bold steps today.',
@@ -67,7 +63,7 @@ spelling_corrections = {
 
 @app.route('/')
 def serve_index():
-    return application.send_static_file('index.html')
+    return app.send_static_file('index.html')
 
 @app.route('/process', methods=['POST'])
 def process_birth_details():
@@ -195,6 +191,4 @@ def process_message():
         return jsonify({'status': 'error', 'message': str(e)})
 
 if __name__ == '__main__':
-
     app.run(debug=True, host='0.0.0.0', port=5000)
-
