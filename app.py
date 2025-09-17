@@ -11,6 +11,8 @@ import pytz
 import nltk
 from nltk.tokenize import word_tokenize
 import time
+import urllib3
+from urllib3.util.retry import Retry
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -32,7 +34,7 @@ except Exception as e:
     raise Exception("Ephemeris path './ephe' not found.")
 
 app = Flask(__name__, static_folder='static')
-CORS(app)  # Changed from CORS(application) to CORS(app)
+CORS(app)  # Corrected to use 'app' instead of 'application'
 
 # Sign mapper, horoscopes, user_data, geolocation_cache, spelling_corrections
 signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
@@ -90,23 +92,32 @@ def process_birth_details():
                 time.sleep(1 - (current_time - last_geocode_time))
             last_geocode_time = time.time()
 
-            geolocator = Nominatim(user_agent='ai_astrologer', timeout=10)
-            try:
-                location = geolocator.geocode(place, exactly_one=True)
-                if not location:
-                    country = place.split(',')[-1].strip()
-                    logger.debug(f"Falling back to country: {country}")
-                    location = geolocator.geocode(country, exactly_one=True)
+            geolocator = Nominatim(user_agent='ai_astrologer', timeout=15)
+            session = urllib3.PoolManager(retries=Retry(total=3, backoff_factor=0.5))
+            for attempt in range(3):
+                try:
+                    location = geolocator.geocode(place, exactly_one=True)
                     if not location:
-                        logger.error(f"Geolocation failed for place: {place} and country: {country}")
-                        return jsonify({'status': 'error', 'message': f'Invalid place: "{place}". Try a specific location like "Visakhapatnam, India" or check spelling.'})
-                logger.debug(f"Geolocation result: {location.address}, Lat: {location.latitude}, Lon: {location.longitude}")
-                lat = location.latitude
-                lon = location.longitude
-                geolocation_cache[place] = (lat, lon)
-            except Exception as e:
-                logger.error(f"Geolocation error: {str(e)}")
-                return jsonify({'status': 'error', 'message': f'Geolocation failed: {str(e)}. Try "Visakhapatnam, India" or check your internet connection.'})
+                        if corrected_place != place:
+                            logger.debug(f"Retrying with corrected place: {corrected_place}")
+                            location = geolocator.geocode(corrected_place, exactly_one=True)
+                        if not location:
+                            country = place.split(',')[-1].strip() if ',' in place else place
+                            logger.debug(f"Falling back to country: {country}")
+                            location = geolocator.geocode(country, exactly_one=True)
+                            if not location:
+                                logger.error(f"Geolocation failed for place: {place} and country: {country}")
+                                return jsonify({'status': 'error', 'message': f'Invalid place: "{place}". Try a specific location like "Visakhapatnam, India" or check spelling.'})
+                    logger.debug(f"Geolocation result: {location.address}, Lat: {location.latitude}, Lon: {location.longitude}")
+                    lat = location.latitude
+                    lon = location.longitude
+                    geolocation_cache[place] = (lat, lon)
+                    break
+                except Exception as e:
+                    if attempt == 2:
+                        logger.error(f"Geolocation error after retries: {str(e)} - Query: {place}")
+                        return jsonify({'status': 'error', 'message': f'Geolocation failed: {str(e)}. Check your internet or try again later with "Visakhapatnam, India".'})
+                    time.sleep(2 ** attempt)  # Exponential backoff
 
         tf = TimezoneFinder()
         tz_str = tf.timezone_at(lng=lon, lat=lat)
