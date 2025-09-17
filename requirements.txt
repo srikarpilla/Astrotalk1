@@ -1,4 +1,12 @@
-flask==2.3.2
+flask==2.3.3
 flask-cors==4.0.0
+timezonefinder==6.5.1
+pytz==2024.1
 nltk==3.8.1
-gunicorn==23.0.0
+pyswisseph==2.10.3.2
+geopy==2.4.1
+gunicorn==22.0.0
+# h3==3.7.7  # Comment out or replace with h3==3.7.6
+setuptools==70.0.0
+retrying==1.3.4
+googlemaps==4.10.0
